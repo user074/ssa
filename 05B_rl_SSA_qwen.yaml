@@ -1,0 +1,120 @@
+
+name: rl_SSA_05B
+
+output_dir: ./model/checkpoints/${name}
+base_model_path: ./model/Qwen2.5-0.5B  # Use this to train from the slightly trained SFT model
+
+# Tokenizer
+tokenizer:
+  _component_: torchtune.models.qwen2_5.qwen2_5_tokenizer
+  path: ./model/Qwen2.5-0.5B/vocab.json
+  merges_file: ./model/Qwen2.5-0.5B/merges.txt
+  max_seq_len: null
+
+# Dataset
+dataset:
+  _component_: torchtune.dev.grpo.mathData.concat_gsm8k_math_dataset
+  source: user074/concat_cleaned_gsm8k_math_5
+  name:
+  partition:
+seed: 42
+shuffle: False #we set false here because GSM8K is much shorter for demo purpose. Set it back to True during actual training!
+
+# Model Arguments
+model:
+  _component_: torchtune.models.qwen2_5.qwen2_5_0_5b
+
+checkpointer:
+  _component_: torchtune.training.FullModelHFCheckpointer
+  checkpoint_dir: ${base_model_path}
+  checkpoint_files: [
+     model.safetensors
+  ]
+  recipe_checkpoint: null
+  output_dir: ${output_dir}
+  model_type: QWEN2
+
+
+ref_checkpointer:
+  _component_: torchtune.training.FullModelHFCheckpointer
+  checkpoint_dir: ${base_model_path}
+  checkpoint_files: [
+     model.safetensors
+  ]
+  recipe_checkpoint: null
+  output_dir: ${output_dir}/ref  # shouldn't be used?
+  model_type: QWEN2
+
+
+resume_from_checkpoint: False
+save_every_n_epochs: 1
+
+# Fine-tuning arguments
+batch_size: 1
+grpo_samples: 8
+forward_batch_size: 1
+max_generated_tokens: 128
+top_k: null
+temperature: 1.0
+
+ppo_epochs: 1
+
+num_steps: 200 #replace with the actual size of the data/#GPU 17447
+
+clip_grad_norm: 1.0
+
+epochs: 10
+optimizer:
+  _component_: torch.optim.AdamW
+  lr: 1e-5
+  fused: True
+lr_scheduler:
+  _component_: torchtune.training.lr_schedulers.get_cosine_schedule_with_warmup
+  num_warmup_steps: 50
+loss:
+  _component_: torchtune.dev.grpo.loss.GRPOSimpleLoss
+  kl_coeff: 0.01
+  epsilon: 0.2
+
+# Training env
+device: cuda
+
+# Memory management
+enable_activation_checkpointing: True  # True reduces memory
+compile: False  # pytorch compile, set to true for better perf/memory
+
+# Reduced precision
+dtype: bf16
+
+
+# Logging
+metric_logger:
+  _component_: torchtune.training.metric_logging.WandBLogger
+  project: parallelReasoning
+log_every_n_steps: 1
+log_peak_memory_stats: True
+
+# Profiler (disabled)
+profiler:
+  _component_: torchtune.training.setup_torch_profiler
+  enabled: False
+
+  #Output directory of trace artifacts
+  output_dir: ${output_dir}/profiling_outputs
+
+  #`torch.profiler.ProfilerActivity` types to trace
+  cpu: True
+  cuda: True
+
+  #trace options passed to `torch.profiler.profile`
+  profile_memory: True
+  with_stack: True
+  record_shapes: True
+  with_flops: False
+
+  # `torch.profiler.schedule` options:
+  # wait_steps -> wait, warmup_steps -> warmup, active_steps -> active, num_cycles -> repeat
+  wait_steps: 5
+  warmup_steps: 3
+  active_steps: 2
+  num_cycles: 1
