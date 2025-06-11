@@ -3,7 +3,7 @@
 Following are the codebase for the SSA project.
 
 [![Website](https://img.shields.io/badge/Website-SSA-blue)](https://user074.github.io/ssa-parallel-reasoning/)
-[![arXiv](https://img.shields.io/badge/arXiv-2403.xxxxx-b31b1b.svg)](https://arxiv.org/abs/2403.xxxxx)
+[![arXiv](https://img.shields.io/badge/arXiv-2506.09014-b31b1b.svg)](https://arxiv.org/abs/2506.09014v1)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 
